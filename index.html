@@ -2,67 +2,115 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Kalendarz Tradingowy</title>
+  <title>Kalendarz Tradingowy 2025</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    table { border-collapse: collapse; margin: 20px auto; }
-    th, td { border: 1px solid #444; padding: 10px; width: 120px; height: 40px; cursor: pointer; }
-    th { background: #eee; }
-    .green { background: #4CAF50; color: white; }
-    .red { background: #F44336; color: white; }
-    .blue { background: #2196F3; color: white; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    .month {
+      margin-bottom: 40px;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    .day {
+      background: white;
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 8px;
+      cursor: pointer;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .day span {
+      font-weight: bold;
+    }
+    .green { background: #90ee90 !important; }
+    .red { background: #ff7f7f !important; }
+    .blue { background: #87cefa !important; }
   </style>
 </head>
 <body>
-  <h1>Kalendarz Tradingowy</h1>
-  <table id="calendar">
-    <thead>
-      <tr>
-        <th>Data</th>
-        <th>DAX M5</th>
-        <th>NASDAQ M15</th>
-        <th>HTS DAX</th>
-        <th>HTS NASDAQ</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Wygenerujemy miesiąc (np. 31 dni) -->
-      <script>
-        const daysInMonth = 31; // Możesz zmienić
-        let rows = "";
-        for (let d = 1; d <= daysInMonth; d++) {
-          rows += "<tr><td>" + d + "</td>";
-          ["dax", "nasdaq", "htsdax", "htsnasdaq"].forEach(col => {
-            rows += `<td data-key="${col}-${d}"></td>`;
-          });
-          rows += "</tr>";
-        }
-        document.write(rows);
-      </script>
-    </tbody>
-  </table>
+  <h1>Kalendarz Tradingowy 2025</h1>
+  <div id="calendar"></div>
 
   <script>
-    const cells = document.querySelectorAll("td[data-key]");
-    const colors = ["", "green", "red", "blue"];
+    const months = [
+      "Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec",
+      "Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"
+    ];
+    const year = 2025;
 
-    // Wczytaj zapisane ustawienia
-    cells.forEach(cell => {
-      const key = cell.getAttribute("data-key");
-      const saved = localStorage.getItem(key);
-      if (saved) cell.classList.add(saved);
+    const calendarEl = document.getElementById("calendar");
 
-      cell.addEventListener("click", () => {
-        let current = colors.indexOf(
-          [...cell.classList].find(c => colors.includes(c)) || ""
-        );
-        cell.classList.remove("green", "red", "blue");
-        current = (current + 1) % colors.length;
-        const newColor = colors[current];
-        if (newColor) cell.classList.add(newColor);
-        localStorage.setItem(key, newColor);
-      });
-    });
+    function generateCalendar() {
+      for (let month = 0; month < 12; month++) {
+        const monthDiv = document.createElement("div");
+        monthDiv.className = "month";
+        const title = document.createElement("h2");
+        title.textContent = months[month];
+        monthDiv.appendChild(title);
+
+        const grid = document.createElement("div");
+        grid.className = "calendar";
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // dostosowanie do tego że tydzień zaczyna się od poniedziałku
+        let startDay = (firstDay === 0 ? 6 : firstDay - 1);
+
+        for (let i = 0; i < startDay; i++) {
+          const empty = document.createElement("div");
+          grid.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dayDiv = document.createElement("div");
+          dayDiv.className = "day";
+          dayDiv.innerHTML = `<span>${day}</span><div>DAX M5</div><div>NASDAQ M15</div><div>HTS DAX</div><div>HTS NASDAQ</div>`;
+          
+          const key = `${year}-${month+1}-${day}`;
+          const savedColor = localStorage.getItem(key);
+          if (savedColor) dayDiv.classList.add(savedColor);
+
+          dayDiv.addEventListener("click", () => {
+            if (dayDiv.classList.contains("green")) {
+              dayDiv.classList.remove("green");
+              dayDiv.classList.add("red");
+              localStorage.setItem(key, "red");
+            } else if (dayDiv.classList.contains("red")) {
+              dayDiv.classList.remove("red");
+              dayDiv.classList.add("blue");
+              localStorage.setItem(key, "blue");
+            } else if (dayDiv.classList.contains("blue")) {
+              dayDiv.classList.remove("blue");
+              localStorage.removeItem(key);
+            } else {
+              dayDiv.classList.add("green");
+              localStorage.setItem(key, "green");
+            }
+          });
+
+          grid.appendChild(dayDiv);
+        }
+
+        monthDiv.appendChild(grid);
+        calendarEl.appendChild(monthDiv);
+      }
+    }
+
+    generateCalendar();
   </script>
 </body>
 </html>
