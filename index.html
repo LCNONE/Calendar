@@ -2,65 +2,347 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Kalendarz Tradingowy 2025</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalendarz Tradingowy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        table { border-collapse: collapse; margin: 20px auto; }
-        td { width: 100px; height: 50px; border: 1px solid #ccc; cursor: pointer; text-align: center; vertical-align: middle; }
-        .green { background-color: lightgreen; }
-        .red { background-color: lightcoral; }
-        .blue { background-color: lightblue; }
-        h2 { margin-top: 40px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .day-field {
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            background-color: white;
+        }
+        .day-field:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .green { background-color: #34d399; }
+        .red { background-color: #f87171; }
+        .blue { background-color: #60a5fa; }
+        .modal {
+            display: none;
+        }
     </style>
 </head>
-<body>
-    <h1>Kalendarz Tradingowy 2025</h1>
-    
-    <h2>DAX M5</h2>
-    <table id="dax-m5"></table>
+<body class="bg-gray-100 p-8">
 
-    <h2>NASDAQ M15</h2>
-    <table id="nasdaq-m15"></table>
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Kalendarz Tradingowy</h1>
+        
+        <div id="calendar-container" class="grid grid-cols-7 gap-4">
+            <!-- Tygodniowe nagłówki -->
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Pon</div>
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Wt</div>
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Śr</div>
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Czw</div>
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Pt</div>
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Sob</div>
+            <div class="col-span-1 p-4 text-center font-semibold text-gray-700">Ndz</div>
+        </div>
+    </div>
 
-    <h2>HTS DAX</h2>
-    <table id="hts-dax"></table>
-
-    <h2>HTS NASDAQ</h2>
-    <table id="hts-nasdaq"></table>
-
-    <h2>HTS Złoto</h2>
-    <table id="hts-gold"></table>
+    <!-- Modal do wyświetlania wiadomości z API -->
+    <div id="news-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+        <div class="relative p-6 w-11/12 md:w-3/4 lg:w-1/2 bg-white rounded-lg shadow-xl max-h-[80vh] overflow-y-auto">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h2 id="modal-title" class="text-2xl font-bold mb-4">Podsumowanie wiadomości</h2>
+            <div id="modal-content" class="text-gray-700">
+                <!-- Treść będzie ładowana dynamicznie -->
+                <div class="text-center py-8">
+                    <svg class="animate-spin h-8 w-8 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.967l1-1.676zm10 0l1 1.676C19.865 17.824 21 15.042 21 12h-4c0 3.042-1.135 5.824-3 7.967l-1-1.676zM12 20a8 8 0 01-8-8h4a4 4 0 004 4v-4h-4a8 8 0 018-8v4a4 4 0 00-4-4z"></path>
+                    </svg>
+                    <p class="mt-4">Ładowanie...</p>
+                </div>
+            </div>
+            <div id="modal-sources" class="mt-4 text-sm text-gray-500"></div>
+        </div>
+    </div>
 
     <script>
-        function createTable(id) {
-            const table = document.getElementById(id);
-            for (let i = 1; i <= 31; i++) {
-                const row = table.insertRow();
-                for (let j = 1; j <= 1; j++) {
-                    const cell = row.insertCell();
-                    cell.textContent = i;
-                    cell.addEventListener("click", function () {
-                        if (cell.classList.contains("green")) {
-                            cell.classList.remove("green");
-                            cell.classList.add("red");
-                        } else if (cell.classList.contains("red")) {
-                            cell.classList.remove("red");
-                            cell.classList.add("blue");
-                        } else if (cell.classList.contains("blue")) {
-                            cell.classList.remove("blue");
-                        } else {
-                            cell.classList.add("green");
+        const calendarContainer = document.getElementById('calendar-container');
+        const newsModal = document.getElementById('news-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const modalSources = document.getElementById('modal-sources');
+        const closeModalButton = document.getElementById('close-modal');
+        
+        const daysInMonth = 31;
+
+        const fields = [
+            'Dax m5',
+            'Złoto m15',
+            'Nasdaq m15',
+            'HTS DAX',
+            'HTS ZŁOTO',
+            'HTS NASDAQ'
+        ];
+
+        // Klucz API jest automatycznie wstrzykiwany w środowisku Canvas, dlatego pozostaje pusty.
+        const apiKey = "";
+
+        function showLoading(message) {
+            modalContent.innerHTML = `<div class="text-center py-8">
+                <svg class="animate-spin h-8 w-8 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.967l1-1.676zm10 0l1 1.676C19.865 17.824 21 15.042 21 12h-4c0 3.042-1.135 5.824-3 7.967l-1-1.676zM12 20a8 8 0 01-8-8h4a4 4 0 004 4v-4h-4a8 8 0 018-8v4a4 4 0 00-4-4z"></path>
+                </svg>
+                <p class="mt-4">${message}</p>
+            </div>`;
+            modalSources.textContent = '';
+            newsModal.style.display = 'flex';
+        }
+
+        async function fetchAPI(payload, displayFunction) {
+            let retries = 0;
+            const maxRetries = 5;
+            const retryDelay = 1000;
+            
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
+            const requestUrl = apiKey ? `${apiUrl}?key=${apiKey}` : apiUrl;
+
+            const makeApiCall = async () => {
+                try {
+                    const response = await fetch(requestUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        if (response.status === 429 && retries < maxRetries) {
+                            retries++;
+                            await new Promise(resolve => setTimeout(resolve, retryDelay * Math.pow(2, retries)));
+                            return makeApiCall();
                         }
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        const jsonText = candidate.content.parts[0].text;
+                        const data = JSON.parse(jsonText);
+                        
+                        let sources = [];
+                        const groundingMetadata = candidate.groundingMetadata;
+                        if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                            sources = groundingMetadata.groundingAttributions
+                                .map(attribution => ({ uri: attribution.web?.uri, title: attribution.web?.title }))
+                                .filter(source => source.uri && source.title);
+                        }
+                        displayFunction(data, sources);
+                    } else {
+                        modalContent.textContent = "Brak dostępnych danych. Spróbuj ponownie później.";
+                    }
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    modalContent.textContent = "Wystąpił błąd podczas pobierania danych. Spróbuj ponownie.";
+                }
+            };
+            
+            makeApiCall();
+        }
+
+        async function fetchTradingSummary(date) {
+            modalTitle.textContent = `Podsumowanie z dnia ${date}`;
+            showLoading('Analizuję wiadomości rynkowe. Proszę czekać...');
+
+            const userQuery = `Podaj zwięzłe podsumowanie kluczowych wiadomości i ruchów rynkowych dla DAX, Złota i Nasdaqa z ostatnich 24 godzin.
+                                  Zwróć odpowiedź w formacie JSON z następującymi kluczami: "title" (tytuł podsumowania), "summary" (tekst podsumowania), "dax" (kluczowe punkty dotyczące DAX w liście), "gold" (kluczowe punkty dotyczące Złota w liście), "nasdaq" (kluczowe punkty dotyczące Nasdaq w liście).`;
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "title": { "type": "STRING" },
+                            "summary": { "type": "STRING" },
+                            "dax": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "gold": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "nasdaq": { "type": "ARRAY", "items": { "type": "STRING" } }
+                        }
+                    }
+                },
+            };
+
+            await fetchAPI(payload, (data, sources) => {
+                let htmlContent = `
+                    <h3 class="font-semibold text-lg mb-2">${data.title}</h3>
+                    <p class="mb-4">${data.summary}</p>
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-800">DAX:</h4>
+                        <ul class="list-disc list-inside">${data.dax.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-800">Złoto:</h4>
+                        <ul class="list-disc list-inside">${data.gold.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800">Nasdaq:</h4>
+                        <ul class="list-disc list-inside">${data.nasdaq.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                `;
+                modalContent.innerHTML = htmlContent;
+                if (sources.length > 0) {
+                    modalSources.innerHTML = '<strong>Źródła:</strong><br>';
+                    sources.forEach(source => {
+                        modalSources.innerHTML += `<a href="${source.uri}" target="_blank" class="text-blue-500 hover:underline">${source.title}</a><br>`;
                     });
                 }
+            });
+        }
+
+        async function fetchEducationalContent(topic) {
+            modalTitle.textContent = `Co to jest ${topic}?`;
+            showLoading('Generuję treść edukacyjną. Proszę czekać...');
+
+            const userQuery = `Wyjaśnij w prosty sposób, co oznacza "${topic}" w kontekście tradingowym. Użyj prostego języka, unikaj żargonu. Zwróć odpowiedź w formacie JSON z następującymi kluczami: "definition" (krótka definicja), "example" (praktyczny przykład lub analogia), "disclaimer" (standardowy disclaimer o charakterze edukacyjnym treści).`;
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "definition": { "type": "STRING" },
+                            "example": { "type": "STRING" },
+                            "disclaimer": { "type": "STRING" }
+                        }
+                    }
+                },
+            };
+
+            await fetchAPI(payload, (data) => {
+                let htmlContent = `
+                    <p class="mb-4"><strong>Definicja:</strong> ${data.definition}</p>
+                    <p class="mb-4"><strong>Przykład:</strong> ${data.example}</p>
+                    <p class="text-sm text-gray-500">${data.disclaimer}</p>
+                `;
+                modalContent.innerHTML = htmlContent;
+            });
+        }
+
+        async function generateTradingPlan(topic) {
+            modalTitle.textContent = `Plan tradingowy dla ${topic}`;
+            showLoading('Generuję plan tradingowy. Proszę czekać...');
+
+            const userQuery = `Wygeneruj prosty plan tradingowy dla "${topic}". Zwróć odpowiedź w formacie JSON z następującymi kluczami: "title" (tytuł planu), "strategy" (lista punktów strategii), "risk_management" (lista zasad zarządzania ryzykiem). Dodaj również "disclaimer" (ostrzeżenie, że jest to tylko przykład).`;
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "title": { "type": "STRING" },
+                            "strategy": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "risk_management": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "disclaimer": { "type": "STRING" }
+                        }
+                    }
+                },
+            };
+
+            await fetchAPI(payload, (data) => {
+                let htmlContent = `
+                    <h3 class="font-semibold text-lg mb-2">${data.title}</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-800">Strategia:</h4>
+                        <ul class="list-disc list-inside">${data.strategy.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-800">Zarządzanie ryzykiem:</h4>
+                        <ul class="list-disc list-inside">${data.risk_management.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                    <p class="text-sm text-gray-500">${data.disclaimer}</p>
+                `;
+                modalContent.innerHTML = htmlContent;
+            });
+        }
+
+        function generateCalendar() {
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col justify-between';
+
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'font-bold text-lg mb-2 text-gray-800';
+                dayHeader.textContent = i;
+                dayDiv.appendChild(dayHeader);
+
+                const fieldsContainer = document.createElement('div');
+
+                fields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'day-field text-gray-600 border border-gray-200 rounded-md p-2 mb-2 text-sm select-none';
+                    fieldDiv.textContent = field;
+                    fieldDiv.dataset.color = 'none';
+
+                    fieldDiv.addEventListener('click', () => {
+                        let currentColor = fieldDiv.dataset.color;
+                        let nextColor = '';
+                        if (currentColor === 'none') {
+                            nextColor = 'green';
+                        } else if (currentColor === 'green') {
+                            nextColor = 'red';
+                        } else if (currentColor === 'red') {
+                            nextColor = 'blue';
+                        } else if (currentColor === 'blue') {
+                            nextColor = 'none';
+                        }
+                        fieldDiv.dataset.color = nextColor;
+                        fieldDiv.className = `day-field text-gray-600 border border-gray-200 rounded-md p-2 mb-2 text-sm ${nextColor}`;
+                    });
+                    
+                    fieldsContainer.appendChild(fieldDiv);
+                });
+
+                dayDiv.appendChild(fieldsContainer);
+
+                const newsButton = document.createElement('button');
+                newsButton.className = 'w-full mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 shadow-md';
+                newsButton.textContent = 'Wiadomości ✨';
+                newsButton.addEventListener('click', () => fetchTradingSummary(i));
+                dayDiv.appendChild(newsButton);
+
+                const educationButton = document.createElement('button');
+                educationButton.className = 'w-full mt-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-200 shadow-md';
+                educationButton.textContent = 'Edukacja ✨';
+                educationButton.addEventListener('click', () => {
+                    const randomTopic = fields[Math.floor(Math.random() * fields.length)];
+                    fetchEducationalContent(randomTopic);
+                });
+                dayDiv.appendChild(educationButton);
+                
+                const planButton = document.createElement('button');
+                planButton.className = 'w-full mt-2 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors duration-200 shadow-md';
+                planButton.textContent = 'Plan Tradingowy ✨';
+                planButton.addEventListener('click', () => {
+                    const randomTopic = fields[Math.floor(Math.random() * fields.length)];
+                    generateTradingPlan(randomTopic);
+                });
+                dayDiv.appendChild(planButton);
+
+                calendarContainer.appendChild(dayDiv);
             }
         }
 
-        createTable("dax-m5");
-        createTable("nasdaq-m15");
-        createTable("hts-dax");
-        createTable("hts-nasdaq");
-        createTable("hts-gold");
+        closeModalButton.addEventListener('click', () => newsModal.style.display = 'none');
+        newsModal.addEventListener('click', (event) => {
+            if (event.target === newsModal) newsModal.style.display = 'none';
+        });
+
+        generateCalendar();
     </script>
 </body>
 </html>
